@@ -37,9 +37,7 @@ if not backup_folder_exists:
 else:
     print(f'An existing kobo backup folder was detected at {backup_base_directory}.')
 
-backup_path = os.path.join(backup_base_directory, 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
-print (backup_path)
-print(os.path.join(backup_path))
+backup_path = os.path.join(backup_base_directory, 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')) # append datestamp to directory name.
 if os.path.isdir(backup_path):
     print(f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute.")
     sys.exit()
@@ -49,7 +47,7 @@ try: # copy files
 except OSError: # some unrequired .Trashes will return 'operation not permitted'.
     pass
 
-def get_directory_size(directory): # figure out how much was backed up
+def get_directory_size(directory): # figure out how much was backed up.
     total = 0
     try:
         for entry in os.scandir(directory):
