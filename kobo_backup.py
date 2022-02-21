@@ -6,8 +6,8 @@ import subprocess
 import sys
 import shutil
 
-label = 'KOBOeReader' # name of kobo - this is the default.
-backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be os agnostic.
+label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
+backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
 
 try: # get kobo mount point on linux
     lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
