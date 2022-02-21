@@ -2,13 +2,14 @@ import json
 import os
 import datetime
 from pathlib import Path
-from sqlite3 import OperationalError
 import subprocess
 import sys
 import shutil
 
 label = 'KOBOeReader' # name of kobo - this is the default.
-backup_base_directory = '~/Backups/kobo' # the folder in which backups will be placed.
+backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be os agnostic.
+
+print(backup_base_directory)
 
 try: #get kobo mount point
     lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
@@ -30,15 +31,16 @@ else:
     [kobo] = kobos
     print(f'Kobo mountpoint is: {Path(kobo)}.')
 
-backup_folder_exists = os.path.isdir(os.path.expanduser(backup_base_directory)) # check backup base directory exists locally, if not create it.
+backup_folder_exists = os.path.isdir(backup_base_directory) # check backup base directory exists locally, if not create it.
 if not backup_folder_exists:
     print(f'No backup folder detected. Creating {backup_base_directory}')
-    os.makedirs(os.path.expanduser(backup_base_directory))
+    os.makedirs(backup_base_directory)
     print(f'created folder: {backup_base_directory}')
 else:
     print(f'An existing kobo backup folder was detected at {backup_base_directory}.')
 
-backup_path = os.path.join(os.path.expanduser(backup_base_directory), 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
+backup_path = os.path.join(backup_base_directory, 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
+print(backup_path)
 if os.path.isdir(backup_path):
     print(f"A backup of the kobo has already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute.")
     sys.exit()
