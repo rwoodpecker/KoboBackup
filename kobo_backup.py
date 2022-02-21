@@ -22,9 +22,9 @@ except FileNotFoundError:  # macOS (does not have lsblk)
     user_os = 'macOS'
 
 if len(kobos) > 1:
-    raise RuntimeError(f'Multiple Kobo devices detected: {kobos}')
+    raise RuntimeError(f'Multiple Kobo devices detected: {kobos}.')
 elif len(kobos) == 0:
-    print('No kobos detected')
+    print('No kobos detected.')
     sys.exit()
 else:
     [kobo] = kobos
@@ -32,7 +32,7 @@ else:
 
 backup_folder_exists = os.path.isdir(backup_base_directory) # check backup base directory exists locally, if not create it.
 if not backup_folder_exists:
-    print(f'No backup folder detected. Creating {backup_base_directory}')
+    print(f'No backup folder detected. Creating {backup_base_directory}.')
     os.makedirs(backup_base_directory)
 else:
     print(f'An existing kobo backup folder was detected at {backup_base_directory}.')
