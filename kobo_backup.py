@@ -73,5 +73,10 @@ def get_size_format(b, factor=1024, suffix="B"): # convert bytes to something hu
         b /= factor
     return f"{b:.2f}Y{suffix}"
 
-print(f'The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}.')
+try:
+    previous_backup
+    print(f'The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}.')
+except NameError:
+    pass
+
 print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
