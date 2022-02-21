@@ -34,17 +34,18 @@ backup_folder_exists = os.path.isdir(backup_base_directory) # check backup base 
 if not backup_folder_exists:
     print(f'No backup folder detected. Creating {backup_base_directory}')
     os.makedirs(backup_base_directory)
-    print(f'created folder: {backup_base_directory}')
 else:
     print(f'An existing kobo backup folder was detected at {backup_base_directory}.')
 
 backup_path = os.path.join(backup_base_directory, 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
+print (backup_path)
+print(os.path.join(backup_path))
 if os.path.isdir(backup_path):
     print(f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute.")
     sys.exit()
 
 try: # copy files
-    shutil.copytree(Path(kobo), os.path.join(backup_path))
+    shutil.copytree(Path(kobo), backup_path)
 except OSError: # some unrequired .Trashes will return 'operation not permitted'.
     pass
 
