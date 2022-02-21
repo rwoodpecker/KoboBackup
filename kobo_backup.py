@@ -37,6 +37,11 @@ if not backup_folder_exists:
 else:
     print(f'An existing kobo backup folder was detected at {backup_base_directory}.')
 
+try:
+    previous_backup = max(glob.glob(os.path.join(backup_base_directory, '*/')), key=os.path.getmtime) # get the folder of the previous backup that occured
+except ValueError:
+    pass
+
 backup_path = os.path.join(backup_base_directory, 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')) # append datestamp to directory name.
 if os.path.isdir(backup_path):
     print(f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute.")
@@ -68,5 +73,5 @@ def get_size_format(b, factor=1024, suffix="B"): # convert bytes to something hu
         b /= factor
     return f"{b:.2f}Y{suffix}"
 
-backup_file_count = sum(len(files) for _, _, files in os.walk(backup_path)) # count number of files backed up.
-print(f'Backup complete. Copied {backup_file_count} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
+print (f'The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}.')
+print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}')
