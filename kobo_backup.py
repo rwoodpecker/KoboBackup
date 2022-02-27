@@ -2,6 +2,7 @@ import json
 import os
 import datetime
 from pathlib import Path
+import glob
 import subprocess
 import sys
 import shutil
@@ -9,17 +10,30 @@ import shutil
 label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
 backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
 
-try: # get kobo mount point on linux
-    lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
-    lsblk_json = json.loads(lsblk_check)
-    kobos = [device for device in lsblk_json['blockdevices'] if device.get('label', None) == label]
-    kobos = [kobo['mountpoint'] for kobo in kobos]
-    user_os = 'Linux'
-except FileNotFoundError:  # macOS (does not have lsblk)
-    df_output = subprocess.check_output(('df', '-Hl')).decode('utf8')
-    output_parts = [o.split() for o in df_output.split('\n')]
-    kobos = [o[-1] for o in output_parts if f'/Volumes/{label}' in o]
-    user_os = 'macOS'
+if os.name == 'nt': # Get mount point on Windows
+    import wmi
+
+    # Set up WMI object for later
+    c = wmi.WMI()
+    kobos = []
+    # Get all drives and their infos
+    for drive in c.Win32_LogicalDisk():
+        # If any drive is called the label, append it to the list
+        if drive.VolumeName == label:
+            kobos.append(drive.Name + os.sep)
+    user_os = "Windows"
+else:
+    try: # get kobo mount point on linux
+        lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
+        lsblk_json = json.loads(lsblk_check)
+        kobos = [device for device in lsblk_json['blockdevices'] if device.get('label', None) == label]
+        kobos = [kobo['mountpoint'] for kobo in kobos]
+        user_os = 'Linux'
+    except FileNotFoundError:  # macOS (does not have lsblk)
+        df_output = subprocess.check_output(('df', '-Hl')).decode('utf8')
+        output_parts = [o.split() for o in df_output.split('\n')]
+        kobos = [o[-1] for o in output_parts if f'/Volumes/{label}' in o]
+        user_os = 'macOS'
 
 if len(kobos) > 1:
     raise RuntimeError(f'Multiple Kobo devices detected: {kobos}.')
@@ -80,3 +94,4 @@ except NameError:
     pass
 
 print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
+
