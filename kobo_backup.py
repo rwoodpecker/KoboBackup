@@ -6,13 +6,21 @@ import glob
 import subprocess
 import sys
 import shutil
-from windows_utils import get_windows_mount_point
 
 label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
 backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
 
 if os.name == 'nt': # Get mount point on Windows
-    kobos = get_windows_mount_point(label)
+    import wmi
+
+    # Set up WMI object for later
+    c = wmi.WMI()
+    kobos = []
+    # Get all drives and their infos
+    for drive in c.Win32_LogicalDisk():
+        # If any drive is called the label, append it to the list
+        if drive.VolumeName == label:
+            kobos.append(drive.Name + os.sep)
     user_os = "Windows"
 else:
     try: # get kobo mount point on linux
