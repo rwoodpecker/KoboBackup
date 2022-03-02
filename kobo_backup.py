@@ -31,6 +31,16 @@ elif platform.system() == 'Linux': # Get mount point on Linux
         # Create the autostart script
         create_linux_autostart_script(label, backup_base_directory)
         sys.exit()
+    elif len(sys.argv) > 1 and sys.argv[1] == '--cancel_auto_backup':
+        # Remove the autostart script
+        autostart_path = os.path.expanduser('~/.config/autostart/')
+        desktop_file_name = 'auto_kobo_backup.desktop'
+        try:
+            os.remove(autostart_path + desktop_file_name)
+            print("Removed file in autostart called " + desktop_file_name)
+        except FileNotFoundError:
+            print("There was no auto backup set up.")
+        sys.exit()
     else:
         lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
         lsblk_json = json.loads(lsblk_check)
