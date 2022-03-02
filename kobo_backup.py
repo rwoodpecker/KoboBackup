@@ -105,6 +105,10 @@ except NameError:
 
 print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
 try:
-    subprocess.Popen(['notify-send', f"Backed up!", f"See {backup_path}"]) 
+    # Only tested the below on Linux
+    # Open a notification to say it was backed up
+    subprocess.Popen(['notify-send', f"Backed up!"])
+    # Open the file explorer to the backed up directory
+    os.system(f'xdg-open {backup_path}')
 except Exception:
     pass
