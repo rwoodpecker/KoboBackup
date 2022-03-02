@@ -7,21 +7,13 @@ import glob
 import subprocess
 import sys
 import shutil
+import platform
 
 label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
 backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
 
-# Setup auto backup script
-if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup' and platform.system() == "Linux":
-    from utils import create_linux_autostart_script
-
-    # Create the autostart script
-    create_linux_autostart_script(label, backup_base_directory)
-    sys.exit()
-
-if os.name == 'nt': # Get mount point on Windows
+if platform.system == 'Windows': # Get mount point on Windows
     import wmi
-
     # Set up WMI object for later
     c = wmi.WMI()
     kobos = []
@@ -31,18 +23,27 @@ if os.name == 'nt': # Get mount point on Windows
         if drive.VolumeName == label:
             kobos.append(drive.Name + os.sep)
     user_os = "Windows"
-else:
-    try: # get kobo mount point on linux
+elif platform.system() == 'Linux': # Get mount point on Linux
+    # But first setup auto backup script if user has given appropriate flag.
+    if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup':
+        from utils import create_linux_autostart_script
+
+        # Create the autostart script
+        create_linux_autostart_script(label, backup_base_directory)
+        sys.exit()
+    else:
         lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
         lsblk_json = json.loads(lsblk_check)
         kobos = [device for device in lsblk_json['blockdevices'] if device.get('label', None) == label]
         kobos = [kobo['mountpoint'] for kobo in kobos]
         user_os = 'Linux'
-    except FileNotFoundError:  # macOS (does not have lsblk)
-        df_output = subprocess.check_output(('df', '-Hl')).decode('utf8')
-        output_parts = [o.split() for o in df_output.split('\n')]
-        kobos = [o[-1] for o in output_parts if f'/Volumes/{label}' in o]
-        user_os = 'macOS'
+elif platform.system() == 'Darwin':  # Get mount point on MacOS
+    df_output = subprocess.check_output(('df', '-Hl')).decode('utf8')
+    output_parts = [o.split() for o in df_output.split('\n')]
+    kobos = [o[-1] for o in output_parts if f'/Volumes/{label}' in o]
+    user_os = 'macOS'
+else:
+    raise Exception(f'Unsupported OS: {platform.system()=} {platform.release()=}')
 
 if len(kobos) > 1:
     raise RuntimeError(f'Multiple Kobo devices detected: {kobos}.')
@@ -104,6 +105,6 @@ except NameError:
 
 print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
 try:
-    subprocess.Popen(['notify-send', f"Backed up!" f"{backup_path}"]) 
+    subprocess.Popen(['notify-send', f"Backed up!", f"See {backup_path}"]) 
 except Exception:
     pass

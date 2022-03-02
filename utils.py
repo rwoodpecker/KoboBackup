@@ -28,4 +28,5 @@ X-GNOME-Autostart-Delay=0
     # Allow it to be executable
     os.system('chmod +x ' + os.getcwd() + os.sep + script_name)
 
-    print("Created file in autostart, see list of files there: ", os.listdir(os.path.expanduser('~/.config/autostart/')))
+    print(f"Created file in autostart called {desktop_file_name}... Launching directory.")
+    os.system(f'xdg-open {autostart_path}')
