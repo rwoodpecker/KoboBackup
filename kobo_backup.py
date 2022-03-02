@@ -12,7 +12,26 @@ import platform
 label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
 backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
 
-if platform.system == 'Windows': # Get mount point on Windows
+if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup':
+    if platform.system() == "Linux":
+        from utils import create_linux_autostart_script
+
+        # Create the autostart script
+        create_linux_autostart_script(label, backup_base_directory)
+        sys.exit()
+elif len(sys.argv) > 1 and sys.argv[1] == '--cancel_auto_backup':
+    # Remove the autostart script
+    if platform.system() == "Linux":
+        autostart_path = os.path.expanduser('~/.config/autostart/')
+        desktop_file_name = 'auto_kobo_backup.desktop'
+        try:
+            os.remove(autostart_path + desktop_file_name)
+            print("Cancelled auto-backup (removed file in autostart called " + desktop_file_name)
+        except FileNotFoundError:
+            print("There was no auto backup set up.")
+        sys.exit()
+
+if platform.system() == 'Windows': # Get mount point on Windows
     import wmi
     # Set up WMI object for later
     c = wmi.WMI()
@@ -24,29 +43,11 @@ if platform.system == 'Windows': # Get mount point on Windows
             kobos.append(drive.Name + os.sep)
     user_os = "Windows"
 elif platform.system() == 'Linux': # Get mount point on Linux
-    # But first setup auto backup script if user has given appropriate flag.
-    if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup':
-        from utils import create_linux_autostart_script
-
-        # Create the autostart script
-        create_linux_autostart_script(label, backup_base_directory)
-        sys.exit()
-    elif len(sys.argv) > 1 and sys.argv[1] == '--cancel_auto_backup':
-        # Remove the autostart script
-        autostart_path = os.path.expanduser('~/.config/autostart/')
-        desktop_file_name = 'auto_kobo_backup.desktop'
-        try:
-            os.remove(autostart_path + desktop_file_name)
-            print("Removed file in autostart called " + desktop_file_name)
-        except FileNotFoundError:
-            print("There was no auto backup set up.")
-        sys.exit()
-    else:
-        lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
-        lsblk_json = json.loads(lsblk_check)
-        kobos = [device for device in lsblk_json['blockdevices'] if device.get('label', None) == label]
-        kobos = [kobo['mountpoint'] for kobo in kobos]
-        user_os = 'Linux'
+    lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
+    lsblk_json = json.loads(lsblk_check)
+    kobos = [device for device in lsblk_json['blockdevices'] if device.get('label', None) == label]
+    kobos = [kobo['mountpoint'] for kobo in kobos]
+    user_os = 'Linux'
 elif platform.system() == 'Darwin':  # Get mount point on MacOS
     df_output = subprocess.check_output(('df', '-Hl')).decode('utf8')
     output_parts = [o.split() for o in df_output.split('\n')]
