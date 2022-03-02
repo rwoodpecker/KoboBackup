@@ -2,6 +2,7 @@ import json
 import os
 import datetime
 from pathlib import Path
+import platform
 import glob
 import subprocess
 import sys
@@ -9,6 +10,14 @@ import shutil
 
 label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
 backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
+
+# Setup auto backup script
+if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup' and platform.system() == "Linux":
+    from utils import create_linux_autostart_script
+
+    # Create the autostart script
+    create_linux_autostart_script(label, backup_base_directory)
+    sys.exit()
 
 if os.name == 'nt': # Get mount point on Windows
     import wmi
@@ -94,4 +103,7 @@ except NameError:
     pass
 
 print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
-
+try:
+    subprocess.Popen(['notify-send', f"Backed up!" f"{backup_path}"]) 
+except Exception:
+    pass
