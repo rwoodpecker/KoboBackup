@@ -1,16 +1,12 @@
-"""
-A script that watches for the connection of a volume called label (str)
-"""
-
 #!/usr/bin/env python3
 import gi
 from gi.repository import GLib, Gio
+import os
 import subprocess
-from kobo_backup import label
 import sys
 
-
 class WatchForKobo(object):
+
     def __init__(self):
         someloop = GLib.MainLoop()
         self.setup_watching()
@@ -22,16 +18,10 @@ class WatchForKobo(object):
         self.watchdrives.connect("volume_added", self.actonchange)
 
     def actonchange(self, event, volume):
-        if volume.get_name() == label:  # Send notification to user
-            subprocess.run(
-                [
-                    "notify-send",
-                    f"{volume.get_name()} connected",
-                    "Attempting backup...",
-                ]
-            )
+        if volume.get_name() == "KOBOeReader":
+            # Send notification to user
+            subprocess.Popen(['notify-send', f"{volume.get_name()} connected", "Attempting backup..."]) 
             # Run backup script
-            subprocess.call([sys.executable, "kobo_backup.py"])
+            subprocess.call(['python3', 'kobo_backup.py'])
 
-
-WatchForKobo()
+WatchForKobo() 
