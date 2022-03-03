@@ -1,5 +1,6 @@
 import json
 import os
+import signal
 import datetime
 from pathlib import Path
 import platform
@@ -14,7 +15,8 @@ backup_base_directory = str(
     os.path.join(os.path.expanduser("~"), "Backups", "kobo")
 )  # the folder in which backups will be placed. This should be OS agnostic.
 
-if len(sys.argv) > 1 and sys.argv[1] == "--setup_auto_backup":
+# Setup auto backup
+if len(sys.argv) > 1 and sys.argv[1] == "--s":
     if platform.system() == "Linux":
         from utils import create_linux_autostart_script
 
@@ -26,7 +28,34 @@ if len(sys.argv) > 1 and sys.argv[1] == "--setup_auto_backup":
             "The automation feature is currently only supported on Linux. Exiting...."
         )
         sys.exit()
-elif len(sys.argv) > 1 and sys.argv[1] == "--cancel_auto_backup":
+# Temporarily disable auto_backup
+elif len(sys.argv) > 1 and sys.argv[1] == "--d":
+    if platform.system() == "Linux":
+        # Find pid of running watcher script
+        pid = subprocess.check_output(["pgrep", "-f", "linux_automation"]).decode("utf-8").strip()
+        # Kill it
+        os.kill(int(pid), signal.SIGTERM)
+        sys.exit()
+    else:
+        print(
+            "The automation feature is currently only supported on Linux. Exiting...."
+        )
+        sys.exit()
+# Re-enable auto backup (Or enable just for this session)
+elif len(sys.argv) > 1 and sys.argv[1] == "--e":
+    if platform.system() == "Linux":
+        # Run the automation script
+        path_to_automation_script = os.getcwd() + os.sep + "linux_automation.py"
+        subprocess.run(["chmod", "+x", path_to_automation_script])
+        print("Running automation script temporarily in this terminal session... Connect your kobo.")
+        subprocess.run([sys.executable, path_to_automation_script])
+    else:
+        print(
+            "The automation feature is currently only supported on Linux. Exiting...."
+        )
+        sys.exit()
+# Cancel auto backup
+elif len(sys.argv) > 1 and sys.argv[1] == "--c":
     # Remove the autostart script
     if platform.system() == "Linux":
         autostart_path = os.path.expanduser("~/.config/autostart/")
@@ -35,8 +64,16 @@ elif len(sys.argv) > 1 and sys.argv[1] == "--cancel_auto_backup":
             os.remove(autostart_path + desktop_file_name)
             print(
                 "Cancelled auto-backup (removed file in autostart called "
-                + desktop_file_name
+                + desktop_file_name + ")"
             )
+            try:
+                # Find pid of running watcher script
+                pid = subprocess.check_output(["pgrep", "-f", "linux_automation"]).decode("utf-8").strip()
+                # Kill it
+                os.kill(int(pid), signal.SIGTERM)
+                print("Killed running watcher script as well.")
+            except subprocess.CalledProcessError:
+                pass
         except FileNotFoundError:
             print("There was no auto backup set up.")
         sys.exit()
