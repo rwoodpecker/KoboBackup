@@ -8,8 +8,8 @@ from gi.repository import GLib, Gio
 import subprocess
 from kobo_backup import label
 
-class WatchForKobo(object):
 
+class WatchForKobo(object):
     def __init__(self):
         someloop = GLib.MainLoop()
         self.setup_watching()
@@ -21,9 +21,16 @@ class WatchForKobo(object):
         self.watchdrives.connect("volume_added", self.actonchange)
 
     def actonchange(self, event, volume):
-        if volume.get_name() == label:       # Send notification to user
-            subprocess.Popen(['notify-send', f"{volume.get_name()} connected", "Attempting backup..."]) 
+        if volume.get_name() == label:  # Send notification to user
+            subprocess.Popen(
+                [
+                    "notify-send",
+                    f"{volume.get_name()} connected",
+                    "Attempting backup...",
+                ]
+            )
             # Run backup script
-            subprocess.call(['python3', 'kobo_backup.py'])
+            subprocess.call(["python3", "kobo_backup.py"])
+
 
 WatchForKobo()
