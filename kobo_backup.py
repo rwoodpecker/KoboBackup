@@ -19,6 +19,9 @@ if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup':
         # Create the autostart script
         create_linux_autostart_script()
         sys.exit()
+    else:
+        print("The automation feature is currently only supported on Linux. Exiting....")
+        sys.exit()
 elif len(sys.argv) > 1 and sys.argv[1] == '--cancel_auto_backup':
     # Remove the autostart script
     if platform.system() == "Linux":
@@ -29,6 +32,9 @@ elif len(sys.argv) > 1 and sys.argv[1] == '--cancel_auto_backup':
             print("Cancelled auto-backup (removed file in autostart called " + desktop_file_name)
         except FileNotFoundError:
             print("There was no auto backup set up.")
+        sys.exit()
+    else:
+        print("The automation feature is currently only supported on Linux. Exiting....")
         sys.exit()
 
 if platform.system() == 'Windows': # Get mount point on Windows
