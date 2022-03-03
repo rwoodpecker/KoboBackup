@@ -1,5 +1,5 @@
 """
-A script that watches for the connection of a volume called 'label'
+A script that watches for the connection of a volume called label (str)
 """
 
 #!/usr/bin/env python3
