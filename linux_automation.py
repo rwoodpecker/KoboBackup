@@ -7,6 +7,7 @@ import gi
 from gi.repository import GLib, Gio
 import subprocess
 from kobo_backup import label
+import sys
 
 
 class WatchForKobo(object):
@@ -22,7 +23,7 @@ class WatchForKobo(object):
 
     def actonchange(self, event, volume):
         if volume.get_name() == label:  # Send notification to user
-            subprocess.Popen(
+            subprocess.run(
                 [
                     "notify-send",
                     f"{volume.get_name()} connected",
@@ -30,7 +31,7 @@ class WatchForKobo(object):
                 ]
             )
             # Run backup script
-            subprocess.call(["python3", "kobo_backup.py"])
+            subprocess.call([sys.executable, "kobo_backup.py"])
 
 
 WatchForKobo()

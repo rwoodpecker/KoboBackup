@@ -158,6 +158,6 @@ try:
     # Open a notification to say it was backed up
     subprocess.Popen(["notify-send", f"Backed up!"])
     # Open the file explorer to the backed up directory
-    os.system(f"xdg-open {backup_path}")
+    subprocess.run(["xdg-open", backup_path])
 except Exception:
     pass

@@ -3,6 +3,8 @@ Creates a script in ~/.config/autostart that runs the linux_automation.py script
 """
 
 import os
+import subprocess
+import sys
 
 
 def create_linux_autostart_script():
@@ -17,7 +19,7 @@ Type=Application
 Name=Auto Kobo Backup
 Comment=Automatically backup your Kobo
 Path={repo_location}
-Exec=/usr/bin/python3 {script_name}
+Exec={sys.executable} {script_name}
 StartupNotify=true
 X-GNOME-Autostart-enabled=true
 X-GNOME-Autostart-Delay=0
@@ -30,9 +32,9 @@ X-GNOME-Autostart-Delay=0
     # The python automation script called script_name that watches for the Kobo connection
     # is in the same directory as this script.
     # Allow it to be executable.
-    os.system("chmod +x " + repo_location + os.sep + script_name)
+    subprocess.run(["chmod", "+x", repo_location + os.sep + script_name])
 
     print(
         f"Created file in autostart called {desktop_file_name}... Launching directory."
     )
-    os.system(f"xdg-open {autostart_path}")
+    subprocess.run(["xdg-open", autostart_path])
