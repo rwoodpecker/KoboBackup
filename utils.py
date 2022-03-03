@@ -1,7 +1,10 @@
+"""
+Creates a script in ~/.config/autostart that runs the linux_automation.py script on startup.
+"""
+
 import os
 
-def create_linux_autostart_script(label, backup_base_directory):
-    import os
+def create_linux_autostart_script():
 
     autostart_path = os.path.expanduser('~/.config/autostart/')
     script_name = 'linux_automation.py'
@@ -24,9 +27,10 @@ X-GNOME-Autostart-Delay=0
     with open(autostart_path + desktop_file_name, 'w') as script:
         script.write(desktopfile)
 
-    # The python script called script_name is already in backup_base_directory
-    # Allow it to be executable
-    os.system('chmod +x ' + os.getcwd() + os.sep + script_name)
+    # The python automation script called script_name that watches for the Kobo connection
+    # is in the same directory as this script.
+    # Allow it to be executable.
+    os.system('chmod +x ' + repo_location + os.sep + script_name)
 
     print(f"Created file in autostart called {desktop_file_name}... Launching directory.")
     os.system(f'xdg-open {autostart_path}')

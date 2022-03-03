@@ -17,7 +17,7 @@ if len(sys.argv) > 1 and sys.argv[1] == '--setup_auto_backup':
         from utils import create_linux_autostart_script
 
         # Create the autostart script
-        create_linux_autostart_script(label, backup_base_directory)
+        create_linux_autostart_script()
         sys.exit()
 elif len(sys.argv) > 1 and sys.argv[1] == '--cancel_auto_backup':
     # Remove the autostart script
