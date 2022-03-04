@@ -9,6 +9,7 @@ import subprocess
 import sys
 import shutil
 import platform
+import argparse
 
 
 def get_directory_size(directory):  # figure out how much was backed up.
@@ -215,8 +216,20 @@ def main(args):
 
 
 def parse_args():
-    # Put all arg parsing in here
-    pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--c", "--cancel", help="cancel auto backup", action="store_true"
+    )
+    parser.add_argument(
+        "--d", "--disable", help="temporarily disable auto backup", action="store_true"
+    )
+    parser.add_argument(
+        "--e", "--enable", help="re-enable auto backup", action="store_true"
+    )
+    parser.add_argument(
+        "--s", "--start", help="create the auto backup script", action="store_true"
+    )
+    args = parser.parse_args()
 
 
 if __name__ == "__main__":
