@@ -47,7 +47,6 @@ def main(args):
     if args.start:
         if platform.system() == "Linux":
             from utils import create_linux_autostart_script
-
             # Create the autostart script
             create_linux_autostart_script()
             sys.exit()
@@ -216,20 +215,19 @@ def main(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--c", "--cancel", help="cancel auto backup", action="store_true"
+    args = argparse.ArgumentParser()
+    args.add_argument("-c", "--cancel", help="cancel auto backup", action="store_true")
+    args.add_argument(
+        "-d", "--disable", help="temporarily disable auto backup", action="store_true"
     )
-    parser.add_argument(
-        "--d", "--disable", help="temporarily disable auto backup", action="store_true"
+    args.add_argument(
+        "-e", "--enable", help="re-enable auto backup", action="store_true"
     )
-    parser.add_argument(
-        "--e", "--enable", help="re-enable auto backup", action="store_true"
+    args.add_argument(
+        "-s", "--start", help="create the auto backup script", action="store_true"
     )
-    parser.add_argument(
-        "--s", "--start", help="create the auto backup script", action="store_true"
-    )
-    args = parser.parse_args()
+    args = args.parse_args()
+    return args
 
 
 if __name__ == "__main__":
