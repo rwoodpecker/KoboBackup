@@ -44,7 +44,7 @@ def main(args):
     )  # the folder in which backups will be placed. This should be OS agnostic.
 
     # Setup auto backup
-    if len(sys.argv) > 1 and sys.argv[1] == "--s":
+    if args.start:
         if platform.system() == "Linux":
             from utils import create_linux_autostart_script
 
@@ -57,7 +57,7 @@ def main(args):
             )
             sys.exit()
     # Temporarily disable auto_backup
-    elif len(sys.argv) > 1 and sys.argv[1] == "--d":
+    if args.disable:
         if platform.system() == "Linux":
             # Find pid of running watcher script
             pid = (
@@ -74,7 +74,7 @@ def main(args):
             )
             sys.exit()
     # Re-enable auto backup (Or enable just for this session)
-    elif len(sys.argv) > 1 and sys.argv[1] == "--e":
+    if args.enable:
         if platform.system() == "Linux":
             # Run the automation script
             path_to_automation_script = os.getcwd() + os.sep + "linux_automation.py"
@@ -89,7 +89,7 @@ def main(args):
             )
             sys.exit()
     # Cancel auto backup
-    elif len(sys.argv) > 1 and sys.argv[1] == "--c":
+    if args.cancel:
         # Remove the autostart script
         if platform.system() == "Linux":
             autostart_path = os.path.expanduser("~/.config/autostart/")
