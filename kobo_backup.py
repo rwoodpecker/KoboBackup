@@ -36,7 +36,7 @@ def get_size_format(
     return f"{b:.2f}Y{suffix}"
 
 
-def main():
+def main(args):
     label = "KOBOeReader"  # volume label of kobo - this is the default across models but could change in the future.
     backup_base_directory = str(
         os.path.join(os.path.expanduser("~"), "Backups", "kobo")
@@ -214,5 +214,11 @@ def main():
         pass
 
 
+def parse_args():
+    # Put all arg parsing in here
+    pass
+
+
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(args)
