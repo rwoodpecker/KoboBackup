@@ -10,7 +10,6 @@ import sys
 
 from automation.automation_utils import automate_for_linux
 from utils import (
-    UserSystemInfo,
     get_directory_size,
     get_size_format,
     make_tarfile,
