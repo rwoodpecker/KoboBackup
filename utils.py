@@ -38,3 +38,6 @@ X-GNOME-Autostart-Delay=0
         f"Created file in autostart called {desktop_file_name}... Launching directory."
     )
     subprocess.run(["xdg-open", autostart_path])
+    print("Running automation script temporarily in this terminal session... When you restart, it will run in the background.")
+    subprocess.run([sys.executable, repo_location + os.sep + script_name])
+
