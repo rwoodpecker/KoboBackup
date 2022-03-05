@@ -10,10 +10,12 @@ import sys
 
 from automation.automation_utils import automate_for_linux
 from utils import (
+    UserSystemInfo,
     get_directory_size,
     get_size_format,
     make_tarfile,
     get_user_os_and_kobo_mountpoint,
+    backup_notify,
 )
 
 
@@ -114,6 +116,10 @@ def main(args):
             print(
                 f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total raw size of {get_size_format(get_directory_size(backup_path))} and a compressed size of {get_size_format(get_directory_size(compressed_backup_path))} to {compressed_backup_path}."
             )
+            backup_notify(
+                system_info.user_os,
+                compressed_backup_path,
+            )
             try:
                 shutil.rmtree(backup_path)
             except Exception:
@@ -125,18 +131,7 @@ def main(args):
             print(
                 f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
             )
-
-    # Only tested the below on Linux
-    try:
-        # Open a notification to say it was backed up
-        subprocess.Popen(["notify-send", f"Backed up!"])
-        # Open the file explorer to the backed up directory
-        if args.compress:
-            subprocess.run(["xdg-open", compressed_backup_path])
-        else:
-            subprocess.run(["xdg-open", backup_path])
-    except Exception:
-        pass
+            backup_notify(system_info.user_os, backup_path)
 
 
 def parse_args():
