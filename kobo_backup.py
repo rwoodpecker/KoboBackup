@@ -1,18 +1,15 @@
 import argparse
 import datetime
 import glob
-import json
 import os
 from pathlib import Path
 import platform
 import shutil
-import signal
 import subprocess
 import sys
 
 from automation.automation_utils import automate_for_linux
-from utils import get_directory_size, get_size_format
-
+from utils import get_directory_size, get_size_format, get_user_os_and_kobo_mountpoint
 
 def main(args):
 
@@ -21,6 +18,7 @@ def main(args):
         os.path.join(os.path.expanduser("~"), "Backups", "kobo")
     )  # the folder in which backups will be placed. This should be OS agnostic.
 
+    # Check if user is trying to set up automation
     # This could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
     if args.auto or args.cancel or args.disable or args.enable or args.status:
         if platform.system() == "Linux":
@@ -31,48 +29,22 @@ def main(args):
             )
             sys.exit()
 
-    if platform.system() == "Windows":  # Get mount point on Windows
-        import wmi
+    system_info = get_user_os_and_kobo_mountpoint(label)
 
-        # Set up WMI object for later
-        c = wmi.WMI()
-        kobos = []
-        # Get all drives and their infos
-        for drive in c.Win32_LogicalDisk():
-            # If any drive is called the label, append it to the list
-            if drive.VolumeName == label:
-                kobos.append(drive.Name + os.sep)
-        user_os = "Windows"
-    elif platform.system() == "Linux":  # Get mount point on Linux
-        lsblk_check = subprocess.check_output(["lsblk", "-f", "--json"]).decode("utf8")
-        lsblk_json = json.loads(lsblk_check)
-        kobos = [
-            device
-            for device in lsblk_json["blockdevices"]
-            if device.get("label", None) == label
-        ]
-        kobos = [kobo["mountpoint"] for kobo in kobos]
-        user_os = "Linux"
-    elif platform.system() == "Darwin":  # Get mount point on MacOS
-        df_output = subprocess.check_output(("df", "-Hl")).decode("utf8")
-        output_parts = [o.split() for o in df_output.split("\n")]
-        kobos = [o[-1] for o in output_parts if f"/Volumes/{label}" in o]
-        user_os = "macOS"
-    else:
-        raise Exception(f"Unsupported OS: {platform.system()=} {platform.release()=}")
-
-    if len(kobos) > 1:
-        raise RuntimeError(f"Multiple Kobo devices detected: {kobos}.")
-    elif len(kobos) == 0:
+    # Check we have one and only one Kobo connected
+    if len(system_info.kobos) > 1:
+        raise RuntimeError(f"Multiple Kobo devices detected: {system_info.kobos}.")
+    elif len(system_info.kobos) == 0:
         print("No kobos detected.")
         sys.exit()
     else:
-        [kobo] = kobos
-        print(f"Kobo mountpoint is: {Path(kobo)} on {user_os}.")
+        [kobo] = system_info.kobos
+        print(f"Kobo mountpoint is: {Path(kobo)} on {system_info.user_os}.")
 
+    # Check backup base directory exists locally, if not create it.
     backup_folder_exists = os.path.isdir(
         backup_base_directory
-    )  # check backup base directory exists locally, if not create it.
+    ) 
     if not backup_folder_exists:
         print(f"No backup folder detected. Creating {backup_base_directory}.")
         os.makedirs(backup_base_directory)
@@ -81,28 +53,33 @@ def main(args):
             f"An existing kobo backup folder was detected at {backup_base_directory}."
         )
 
-    try:
-        previous_backup = max(
-            glob.glob(os.path.join(backup_base_directory, "*/")), key=os.path.getmtime
-        )  # get the folder of the previous backup that occured
-    except ValueError:
-        pass
-
+    # Append datestamp to directory name.
     backup_path = os.path.join(
         backup_base_directory,
         "kobo_backup_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"),
-    )  # append datestamp to directory name.
+    )  
+    # Check that we haven't already backed up already during this minute.
     if os.path.isdir(backup_path):
         print(
             f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute."
         )
         sys.exit()
 
-    try:  # copy files
+    # Get the folder of the previous backup that occured
+    try:
+        previous_backup = max(
+            glob.glob(os.path.join(backup_base_directory, "*/")), key=os.path.getmtime
+        )  
+    except ValueError:
+        pass
+
+    # Copy files
+    try: 
         shutil.copytree(Path(kobo), backup_path)
     except OSError:  # some unrequired .Trashes will return 'operation not permitted'.
         pass
 
+    # Print size of last backup and current backup to stdout.
     try:
         previous_backup
         print(
@@ -114,8 +91,9 @@ def main(args):
     print(
         f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
     )
+
+    # Only tested the below on Linux
     try:
-        # Only tested the below on Linux
         # Open a notification to say it was backed up
         subprocess.Popen(["notify-send", f"Backed up!"])
         # Open the file explorer to the backed up directory
