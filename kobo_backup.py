@@ -43,8 +43,31 @@ def main(args):
         os.path.join(os.path.expanduser("~"), "Backups", "kobo")
     )  # the folder in which backups will be placed. This should be OS agnostic.
 
+    # Check status of auto backup
+    if args.status:
+        if platform.system() == "Linux":
+            # Check if auto backup is enabled
+            try:
+                # Check if watcher script is running (will throw subprocess.CalledProcessError if not)
+                subprocess.check_output(["pgrep", "-f", "linux_automation"])
+                print("Auto backup is currently enabled (watching for Kobo...).")
+            except subprocess.CalledProcessError:
+                print("Auto backup is currently disabled (watcher script not detected).")
+            # Check of the autostart file exists
+            autostart_path = os.path.expanduser("~/.config/autostart/")
+            desktop_file_name = "auto_kobo_backup.desktop"
+            if os.path.exists(autostart_path + desktop_file_name):
+                print("Auto backup is enabled on restart.")
+            else:
+                print("Auto backup script will not run on restart.")
+            sys.exit()
+        else:
+            print(
+                "The automation feature is currently only supported on Linux. Exiting...."
+            )
+            sys.exit()
     # Setup auto backup
-    if args.start:
+    if args.auto:
         if platform.system() == "Linux":
             from utils import create_linux_autostart_script
             # Create the autostart script
@@ -58,15 +81,19 @@ def main(args):
     # Temporarily disable auto_backup
     if args.disable:
         if platform.system() == "Linux":
-            # Find pid of running watcher script
-            pid = (
-                subprocess.check_output(["pgrep", "-f", "linux_automation"])
-                .decode("utf-8")
-                .strip()
-            )
-            # Kill it
-            os.kill(int(pid), signal.SIGTERM)
-            sys.exit()
+            try:
+                # Find pid of running watcher script
+                pid = (
+                    subprocess.check_output(["pgrep", "-f", "linux_automation"])
+                    .decode("utf-8")
+                    .strip()
+                )
+                # Kill it
+                os.kill(int(pid), signal.SIGTERM)
+                sys.exit()
+            except subprocess.CalledProcessError: # Command '['pgrep', '-f', 'linux_automation']' will return non-zero exit status 1 if no process is found.
+                print("No auto backup is currently running.")
+                sys.exit()
         else:
             print(
                 "The automation feature is currently only supported on Linux. Exiting...."
@@ -218,13 +245,16 @@ def parse_args():
     args = argparse.ArgumentParser()
     args.add_argument("-c", "--cancel", help="cancel auto backup", action="store_true")
     args.add_argument(
-        "-d", "--disable", help="temporarily disable auto backup", action="store_true"
+        "-d", "--disable", help="temporarily disable auto backup (until next restart)", action="store_true"
     )
     args.add_argument(
-        "-e", "--enable", help="re-enable auto backup", action="store_true"
+        "-e", "--enable", help="enable auto backup for this session only (will run in this terminal)", action="store_true"
     )
     args.add_argument(
-        "-s", "--start", help="create the auto backup script", action="store_true"
+        "-a", "--auto", help="create the auto backup script", action="store_true"
+    )
+    args.add_argument(
+        "-s", "--status", help="show status of auto backup", action="store_true"
     )
     args = args.parse_args()
     return args
