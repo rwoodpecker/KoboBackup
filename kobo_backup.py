@@ -87,13 +87,11 @@ def main(args):
     except OSError:  # some unrequired .Trashes will return 'operation not permitted'.
         pass
 
-    # This is wrapped in try/except so that the code in 'finally' waits for make_tarfile to finish.
+    # This is wrapped in try/except so that the code in 'finally' waits for `make_tarfile()` to finish.
     try:
         if args.compress:
             compressed_backup_path = backup_path + ".tar.gz"
             make_tarfile(compressed_backup_path, backup_path)
-        else:
-            pass
     except Exception:
         print("Failed to compress the backup")
         sys.exit()
