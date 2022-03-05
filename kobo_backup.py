@@ -243,7 +243,9 @@ def main(args):
 
 def parse_args():
     args = argparse.ArgumentParser()
-    args.add_argument("-c", "--cancel", help="cancel auto backup", action="store_true")
+    args.add_argument(
+        "-c", "--cancel", help="cancel auto backup", action="store_true"
+    )
     args.add_argument(
         "-d", "--disable", help="temporarily disable auto backup (until next restart)", action="store_true"
     )
