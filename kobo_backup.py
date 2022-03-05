@@ -112,15 +112,19 @@ def main(args):
             pass
         if args.compress:
             print(
-                f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a raw size of {get_size_format(get_directory_size(backup_path))} and a compressed size of {get_size_format(get_directory_size(compressed_backup_path))} to {compressed_backup_path}."
+                f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total raw size of {get_size_format(get_directory_size(backup_path))} and a compressed size of {get_size_format(get_directory_size(compressed_backup_path))} to {compressed_backup_path}."
             )
             try:
                 shutil.rmtree(backup_path)
             except Exception:
-                print("Failed to remove backup directory after compressing")
+                print("Failed to remove backup directory after compressing.")
                 sys.exit()
             else:
                 pass
+        else:
+            print(
+                f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
+            )
 
     # Only tested the below on Linux
     try:
