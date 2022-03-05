@@ -13,13 +13,15 @@ from utils import get_directory_size, get_size_format, get_user_os_and_kobo_moun
 
 def main(args):
 
-    label = "KOBOeReader"  # volume label of kobo - this is the default across models but could change in the future.
+    # Volume label of kobo - this is the default across models but could change in the future.
+    label = "KOBOeReader"
+    # the folder in which backups will be placed. This is OS agnostic.
     backup_base_directory = str(
         os.path.join(os.path.expanduser("~"), "Backups", "kobo")
-    )  # the folder in which backups will be placed. This should be OS agnostic.
+    )  
 
-    # Check if user is trying to set up automation
-    # This could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
+    # Check if user is trying to set up automation.
+    # This check could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
     if args.auto or args.cancel or args.disable or args.enable or args.status:
         if platform.system() == "Linux":
             automate_for_linux(args)
