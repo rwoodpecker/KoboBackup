@@ -29,11 +29,13 @@ def automate_for_linux(args):
         else:
             print("Auto backup script will not run on restart.")
         sys.exit()
+
     # Setup auto backup
     if args.auto:
         create_linux_autostart_script(args)
         run_linux_watcher_script(args)
         sys.exit()
+
     # Temporarily disable auto_backup
     if args.disable:
         try:
@@ -49,10 +51,12 @@ def automate_for_linux(args):
         except subprocess.CalledProcessError: # Command '['pgrep', '-f', 'automation/watcher_script']' will return non-zero exit status 1 if no process is found.
             print("No auto backup is currently running.")
             sys.exit()
+
     # Re-enable auto backup just for this session (will run in the terminal window it's called from)
     if args.enable:
         # Run the automation script
         run_linux_watcher_script(args)
+        
     # Cancel auto backup
     if args.cancel:
         # Remove the autostart script
