@@ -1,43 +1,76 @@
-"""
-Creates a script in ~/.config/autostart that runs the linux_automation.py script on startup.
-"""
-
+from dataclasses import dataclass
+import json
 import os
+import platform
 import subprocess
-import sys
+from typing import List
+
+def get_directory_size(directory):  # figure out how much was backed up.
+    total = 0
+    try:
+        for entry in os.scandir(directory):
+            if entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                total += get_directory_size(entry.path)
+    except NotADirectoryError:
+        return os.path.getsize(directory)
+    except PermissionError:
+        return 0
+    return total
 
 
-def create_linux_autostart_script():
+def get_size_format(
+    b, factor=1024, suffix="B"
+):  # convert bytes to something human readable.
+    for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
+        if b < factor:
+            return f"{b:.2f}{unit}{suffix}"
+        b /= factor
+    return f"{b:.2f}Y{suffix}"
 
-    autostart_path = os.path.expanduser("~/.config/autostart/")
-    script_name = "linux_automation.py"
-    desktop_file_name = "auto_kobo_backup.desktop"
-    repo_location = os.getcwd()
-
-    desktopfile = f"""[Desktop Entry]
-Type=Application
-Name=Auto Kobo Backup
-Comment=Automatically backup your Kobo
-Path={repo_location}
-Exec={sys.executable} {script_name}
-StartupNotify=true
-X-GNOME-Autostart-enabled=true
-X-GNOME-Autostart-Delay=0
+def get_user_os_and_kobo_mountpoint(label):
     """
+    Returns a UserSystemInfo object with the user's OS and the kobo mountpoint.
+    """
+    if platform.system() == "Windows":  # Get mount point on Windows
+        import wmi
 
-    # write the desktop file, which will be run when the user logs in
-    with open(autostart_path + desktop_file_name, "w") as script:
-        script.write(desktopfile)
+        # Set up WMI object for later
+        c = wmi.WMI()
+        kobos = []
+        # Get all drives and their infos
+        for drive in c.Win32_LogicalDisk():
+            # If any drive is called the label, append it to the list
+            if drive.VolumeName == label:
+                kobos.append(drive.Name + os.sep)
+        return UserSystemInfo(user_os="Windows", kobos=kobos)
+    elif platform.system() == "Linux":  # Get mount point on Linux
+        lsblk_check = subprocess.check_output(["lsblk", "-f", "--json"]).decode("utf8")
+        lsblk_json = json.loads(lsblk_check)
+        kobos = [
+            device
+            for device in lsblk_json["blockdevices"]
+            if device.get("label", None) == label
+        ]
+        kobos = [kobo["mountpoint"] for kobo in kobos]
+        return UserSystemInfo(user_os="Windows", kobos=kobos)
+    elif platform.system() == "Darwin":  # Get mount point on MacOS
+        df_output = subprocess.check_output(("df", "-Hl")).decode("utf8")
+        output_parts = [o.split() for o in df_output.split("\n")]
+        kobos = [o[-1] for o in output_parts if f"/Volumes/{label}" in o]
+        return UserSystemInfo(user_os="Windows", kobos=kobos)
+    else:
+        raise Exception(f"Unsupported OS: {platform.system()=} {platform.release()=}")
 
-    # The python automation script called script_name that watches for the Kobo connection
-    # is in the same directory as this script.
-    # Allow it to be executable.
-    subprocess.run(["chmod", "+x", repo_location + os.sep + script_name])
 
-    print(
-        f"Created file in autostart called {desktop_file_name}... Launching directory."
-    )
-    subprocess.run(["xdg-open", autostart_path])
-    print("Running automation script temporarily in this terminal session... When you restart, it will run in the background.")
-    subprocess.run([sys.executable, repo_location + os.sep + script_name])
+@dataclass
+class UserSystemInfo:
+    """
+    Class to hold user system information.
+    Has two attributes: user_os (str) and kobos (list of str of paths to mounted Kobo devices).
+    """
+    user_os: str
+    kobos: List[str]
+    
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import gi
 from gi.repository import GLib, Gio
-import os
 import subprocess
 import sys
 
@@ -24,4 +22,5 @@ class WatchForKobo(object):
             # Run backup script
             subprocess.call(['python3', 'kobo_backup.py'])
 
-WatchForKobo() 
+if __name__ == "__main__":
+    WatchForKobo()
