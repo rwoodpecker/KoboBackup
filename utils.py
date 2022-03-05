@@ -4,6 +4,8 @@ import os
 import platform
 import subprocess
 from typing import List
+import tarfile
+
 
 def get_directory_size(directory):  # figure out how much was backed up.
     total = 0
@@ -28,6 +30,12 @@ def get_size_format(
             return f"{b:.2f}{unit}{suffix}"
         b /= factor
     return f"{b:.2f}Y{suffix}"
+
+
+def make_tarfile(output_filename, source_dir):
+    with tarfile.open(output_filename, "w:gz", compresslevel=6) as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+
 
 def get_user_os_and_kobo_mountpoint(label):
     """
@@ -70,7 +78,6 @@ class UserSystemInfo:
     Class to hold user system information.
     Has two attributes: user_os (str) and kobos (list of str of paths to mounted Kobo devices).
     """
+
     user_os: str
     kobos: List[str]
-    
-

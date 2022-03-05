@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 
+
 def automate_for_linux(args):
     """
     Automates the Kobo backup process for Linux.
@@ -48,7 +49,7 @@ def automate_for_linux(args):
             # Kill it
             os.kill(int(pid), signal.SIGTERM)
             sys.exit()
-        except subprocess.CalledProcessError: # Command '['pgrep', '-f', 'automation/watcher_script']' will return non-zero exit status 1 if no process is found.
+        except subprocess.CalledProcessError:  # Command '['pgrep', '-f', 'automation/watcher_script']' will return non-zero exit status 1 if no process is found.
             print("No auto backup is currently running.")
             sys.exit()
 
@@ -56,9 +57,9 @@ def automate_for_linux(args):
     if args.enable:
         # Run the automation script
         run_linux_watcher_script(args)
-        
+
     # Cancel auto backup
-    if args.cancel:
+    if args.remove:
         # Remove the autostart script
         autostart_path = os.path.expanduser("~/.config/autostart/")
         desktop_file_name = "auto_kobo_backup.desktop"
@@ -72,7 +73,9 @@ def automate_for_linux(args):
             try:
                 # Find pid of running watcher script
                 pid = (
-                    subprocess.check_output(["pgrep", "-f", "automation/watcher_script"])
+                    subprocess.check_output(
+                        ["pgrep", "-f", "automation/watcher_script"]
+                    )
                     .decode("utf-8")
                     .strip()
                 )
@@ -118,11 +121,14 @@ X-GNOME-Autostart-Delay=0
     )
     subprocess.run(["xdg-open", autostart_path])
 
+
 def run_linux_watcher_script(args):
     """
     Run the linux watcher script temporarily (in current terminal).
     """
-    print("Running automation script temporarily in this terminal session. Connect your Kobo...")
+    print(
+        "Running automation script temporarily in this terminal session. Connect your Kobo..."
+    )
     path_to_automation_script = os.getcwd() + os.sep + "automation/watcher_script.py"
     subprocess.run(["chmod", "+x", path_to_automation_script])
     subprocess.run([sys.executable, path_to_automation_script])

@@ -9,7 +9,13 @@ import subprocess
 import sys
 
 from automation.automation_utils import automate_for_linux
-from utils import get_directory_size, get_size_format, get_user_os_and_kobo_mountpoint
+from utils import (
+    get_directory_size,
+    get_size_format,
+    make_tarfile,
+    get_user_os_and_kobo_mountpoint,
+)
+
 
 def main(args):
 
@@ -18,11 +24,11 @@ def main(args):
     # the folder in which backups will be placed. This is OS agnostic.
     backup_base_directory = str(
         os.path.join(os.path.expanduser("~"), "Backups", "kobo")
-    )  
+    )
 
     # Check if user is trying to set up automation.
     # This check could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
-    if args.auto or args.cancel or args.disable or args.enable or args.status:
+    if args.auto or args.remove or args.disable or args.enable or args.status:
         if platform.system() == "Linux":
             automate_for_linux(args)
         else:
@@ -44,9 +50,7 @@ def main(args):
         print(f"Kobo mountpoint is: {Path(kobo)} on {system_info.user_os}.")
 
     # Check backup base directory exists locally, if not create it.
-    backup_folder_exists = os.path.isdir(
-        backup_base_directory
-    ) 
+    backup_folder_exists = os.path.isdir(backup_base_directory)
     if not backup_folder_exists:
         print(f"No backup folder detected. Creating {backup_base_directory}.")
         os.makedirs(backup_base_directory)
@@ -59,9 +63,9 @@ def main(args):
     backup_path = os.path.join(
         backup_base_directory,
         "kobo_backup_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"),
-    )  
+    )
     # Check that we haven't already backed up during this minute.
-    if os.path.isdir(backup_path):
+    if os.path.isdir(backup_path) or os.path.isfile(backup_path + ".tar.gz"):
         print(
             f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute."
         )
@@ -69,30 +73,54 @@ def main(args):
 
     # Get the folder of the previous backup that occured
     try:
-        previous_backup = max(
-            glob.glob(os.path.join(backup_base_directory, "*/")), key=os.path.getmtime
-        )  
+        if args.compress:
+            previous_backup = max(
+                glob.glob(os.path.join(backup_base_directory, "*")),
+                key=os.path.getmtime,
+            )
+        else:
+            previous_backup = max(
+                glob.glob(os.path.join(backup_base_directory, "*/")),
+                key=os.path.getmtime,
+            )
     except ValueError:
         pass
 
     # Copy files
-    try: 
+    try:
         shutil.copytree(Path(kobo), backup_path)
     except OSError:  # some unrequired .Trashes will return 'operation not permitted'.
         pass
 
-    # Print size of last backup and current backup to stdout.
     try:
-        previous_backup
-        print(
-            f"The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}."
-        )
-    except NameError:
-        pass
-
-    print(
-        f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
-    )
+        if args.compress:
+            compressed_backup_path = backup_path + ".tar.gz"
+            make_tarfile(compressed_backup_path, backup_path)
+        else:
+            pass
+    except Exception:
+        print("Failed to compress the backup")
+        sys.exit()
+    finally:
+        # Print size of last backup and current backup to stdout.
+        try:
+            previous_backup
+            print(
+                f"The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}."
+            )
+        except NameError:
+            pass
+        if args.compress:
+            print(
+                f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a raw size of {get_size_format(get_directory_size(backup_path))} and a compressed size of {get_size_format(get_directory_size(compressed_backup_path))} to {compressed_backup_path}."
+            )
+            try:
+                shutil.rmtree(backup_path)
+            except Exception:
+                print("Failed to remove backup directory after compressing")
+                sys.exit()
+            else:
+                pass
 
     # Only tested the below on Linux
     try:
@@ -107,16 +135,25 @@ def main(args):
 def parse_args():
     args = argparse.ArgumentParser()
     args.add_argument(
-        "-c", "--cancel", help="cancel auto backup", action="store_true"
-    )
-    args.add_argument(
-        "-d", "--disable", help="temporarily disable auto backup (until next restart)", action="store_true"
-    )
-    args.add_argument(
-        "-e", "--enable", help="enable auto backup for this session only (will run in this terminal)", action="store_true"
-    )
-    args.add_argument(
         "-a", "--auto", help="create the auto backup script", action="store_true"
+    )
+    args.add_argument(
+        "-c", "--compress", help="compress the backup", action="store_true"
+    )
+    args.add_argument(
+        "-d",
+        "--disable",
+        help="temporarily disable auto backup (until next restart)",
+        action="store_true",
+    )
+    args.add_argument(
+        "-e",
+        "--enable",
+        help="enable auto backup for this session only (will run in this terminal)",
+        action="store_true",
+    )
+    args.add_argument(
+        "-r", "--remove", help="remove auto backup script", action="store_true"
     )
     args.add_argument(
         "-s", "--status", help="show status of auto backup", action="store_true"
