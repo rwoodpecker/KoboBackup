@@ -71,20 +71,15 @@ def main(args):
         )
         sys.exit()
 
-    # Get the folder of the previous backup that occured
+    # Get the folder of the previous backup that occured for comparison.
     try:
-        if args.compress:
-            previous_backup = max(
-                glob.glob(os.path.join(backup_base_directory, "*")),
-                key=os.path.getmtime,
-            )
-        else:
-            previous_backup = max(
-                glob.glob(os.path.join(backup_base_directory, "*/")),
-                key=os.path.getmtime,
-            )
-    except ValueError:
-        pass
+        backup_directory = "*" if args.compress else "*/"
+        previous_backup = max(
+            glob.glob(os.path.join(backup_base_directory, backup_directory)),
+            key=os.path.getmtime,
+        )
+    except ValueError:  # If there wasn't a previous backup, that's no big deal. This is only used for comparing the size of backups.
+        previous_backup = None
 
     # Copy files
     try:
@@ -92,24 +87,20 @@ def main(args):
     except OSError:  # some unrequired .Trashes will return 'operation not permitted'.
         pass
 
+    # This is wrapped in try/except so that the code in 'finally' waits for `make_tarfile()` to finish.
     try:
         if args.compress:
             compressed_backup_path = backup_path + ".tar.gz"
             make_tarfile(compressed_backup_path, backup_path)
-        else:
-            pass
     except Exception:
         print("Failed to compress the backup")
         sys.exit()
     finally:
         # Print size of last backup and current backup to stdout.
-        try:
-            previous_backup
+        if previous_backup:
             print(
                 f"The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}."
             )
-        except NameError:
-            pass
         if args.compress:
             print(
                 f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total raw size of {get_size_format(get_directory_size(backup_path))} and a compressed size of {get_size_format(get_directory_size(compressed_backup_path))} to {compressed_backup_path}."
@@ -119,8 +110,6 @@ def main(args):
             except Exception:
                 print("Failed to remove backup directory after compressing.")
                 sys.exit()
-            else:
-                pass
         else:
             print(
                 f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
