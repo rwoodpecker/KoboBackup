@@ -10,114 +10,21 @@ import signal
 import subprocess
 import sys
 
-from automation_utils import create_linux_autostart_script
+from automation.automation_utils import automate_for_linux
 from utils import get_directory_size, get_size_format
 
 
 def main(args):
+
     label = "KOBOeReader"  # volume label of kobo - this is the default across models but could change in the future.
     backup_base_directory = str(
         os.path.join(os.path.expanduser("~"), "Backups", "kobo")
     )  # the folder in which backups will be placed. This should be OS agnostic.
 
-    # Check status of auto backup
-    if args.status:
+    # This could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
+    if args.auto or args.cancel or args.disable or args.enable or args.status:
         if platform.system() == "Linux":
-            # Check if auto backup is enabled
-            try:
-                # Check if watcher script is running (will throw subprocess.CalledProcessError if not)
-                subprocess.check_output(["pgrep", "-f", "linux_automation"])
-                print("Auto backup is currently enabled (watching for Kobo...).")
-            except subprocess.CalledProcessError:
-                print("Auto backup is currently disabled (watcher script not detected).")
-            # Check of the autostart file exists
-            autostart_path = os.path.expanduser("~/.config/autostart/")
-            desktop_file_name = "auto_kobo_backup.desktop"
-            if os.path.exists(autostart_path + desktop_file_name):
-                print("Auto backup is enabled on restart.")
-            else:
-                print("Auto backup script will not run on restart.")
-            sys.exit()
-        else:
-            print(
-                "The automation feature is currently only supported on Linux. Exiting...."
-            )
-            sys.exit()
-    # Setup auto backup
-    if args.auto:
-        if platform.system() == "Linux":
-            # Create the autostart script
-            create_linux_autostart_script()
-            sys.exit()
-        else:
-            print(
-                "The automation feature is currently only supported on Linux. Exiting...."
-            )
-            sys.exit()
-    # Temporarily disable auto_backup
-    if args.disable:
-        if platform.system() == "Linux":
-            try:
-                # Find pid of running watcher script
-                pid = (
-                    subprocess.check_output(["pgrep", "-f", "linux_automation"])
-                    .decode("utf-8")
-                    .strip()
-                )
-                # Kill it
-                os.kill(int(pid), signal.SIGTERM)
-                sys.exit()
-            except subprocess.CalledProcessError: # Command '['pgrep', '-f', 'linux_automation']' will return non-zero exit status 1 if no process is found.
-                print("No auto backup is currently running.")
-                sys.exit()
-        else:
-            print(
-                "The automation feature is currently only supported on Linux. Exiting...."
-            )
-            sys.exit()
-    # Re-enable auto backup (Or enable just for this session)
-    if args.enable:
-        if platform.system() == "Linux":
-            # Run the automation script
-            path_to_automation_script = os.getcwd() + os.sep + "linux_automation.py"
-            subprocess.run(["chmod", "+x", path_to_automation_script])
-            print(
-                "Running automation script temporarily in this terminal session... Connect your kobo."
-            )
-            subprocess.run([sys.executable, path_to_automation_script])
-        else:
-            print(
-                "The automation feature is currently only supported on Linux. Exiting...."
-            )
-            sys.exit()
-    # Cancel auto backup
-    if args.cancel:
-        # Remove the autostart script
-        if platform.system() == "Linux":
-            autostart_path = os.path.expanduser("~/.config/autostart/")
-            desktop_file_name = "auto_kobo_backup.desktop"
-            try:
-                os.remove(autostart_path + desktop_file_name)
-                print(
-                    "Cancelled auto-backup (removed file in autostart called "
-                    + desktop_file_name
-                    + ")"
-                )
-                try:
-                    # Find pid of running watcher script
-                    pid = (
-                        subprocess.check_output(["pgrep", "-f", "linux_automation"])
-                        .decode("utf-8")
-                        .strip()
-                    )
-                    # Kill it
-                    os.kill(int(pid), signal.SIGTERM)
-                    print("Killed running watcher script as well.")
-                except subprocess.CalledProcessError:
-                    pass
-            except FileNotFoundError:
-                print("There was no auto backup set up.")
-            sys.exit()
+            automate_for_linux(args)
         else:
             print(
                 "The automation feature is currently only supported on Linux. Exiting...."
