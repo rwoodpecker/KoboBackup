@@ -60,7 +60,7 @@ def main(args):
         backup_base_directory,
         "kobo_backup_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"),
     )  
-    # Check that we haven't already backed up already during this minute.
+    # Check that we haven't already backed up during this minute.
     if os.path.isdir(backup_path):
         print(
             f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute."
