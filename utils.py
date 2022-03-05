@@ -8,7 +8,6 @@ import tarfile
 
 
 def backup_notify(user_os, backup_path):
-    print("The backup notification function has been called")
     if user_os == "Linux":
         subprocess.Popen(["notify-send", f"Backed up!"])
         # Open the file explorer to the backed up directory
