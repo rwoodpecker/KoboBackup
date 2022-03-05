@@ -131,7 +131,10 @@ def main(args):
         # Open a notification to say it was backed up
         subprocess.Popen(["notify-send", f"Backed up!"])
         # Open the file explorer to the backed up directory
-        subprocess.run(["xdg-open", backup_path])
+        if args.compress:
+            subprocess.run(["xdg-open", compressed_backup_path])
+        else:
+            subprocess.run(["xdg-open", backup_path])
     except Exception:
         pass
 
