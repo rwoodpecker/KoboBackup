@@ -4,7 +4,6 @@ Creates a script in ~/.config/autostart that runs the automation/watcher_script.
 
 import os
 from pathlib import Path
-import re
 import signal
 import subprocess
 import sys
