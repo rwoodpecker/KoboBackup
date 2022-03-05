@@ -1,5 +1,5 @@
 """
-Creates a script in ~/.config/autostart that runs the automation/watcher_script.py.py script on startup.
+Creates a script in ~/.config/autostart that runs the automation/watcher_script.py script on startup.
 """
 
 import os
