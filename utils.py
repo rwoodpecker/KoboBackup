@@ -7,6 +7,21 @@ from typing import List
 import tarfile
 
 
+def backup_notify(user_os, backup_path):
+    if user_os == "Linux":
+        subprocess.Popen(["notify-send", f"Backed up!"])
+        # Open the file explorer to the backed up directory
+        subprocess.run(["xdg-open", backup_path])
+    elif user_os == "macOS":
+        subprocess.call(
+            (
+                "/usr/bin/osascript",
+                "-e",
+                'display notification "Backup of Kobo complete" with title "KoboBackup"',
+            )
+        )
+
+
 def get_directory_size(directory):  # figure out how much was backed up.
     total = 0
     try:
