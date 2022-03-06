@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 
+from tarfile import TarError
+import tarfile
 from automation.automation_utils import automate_for_linux
 from utils import (
     get_directory_size,
@@ -32,10 +34,7 @@ def main(args):
         if platform.system() == "Linux":
             automate_for_linux(args)
         else:
-            print(
-                "The automation feature is currently only supported on Linux. Exiting...."
-            )
-            sys.exit()
+            sys.exit("The automation feature is currently only supported on Linux. Exiting.")
 
     system_info = get_user_os_and_kobo_mountpoint(label)
 
@@ -43,8 +42,7 @@ def main(args):
     if len(system_info.kobos) > 1:
         raise RuntimeError(f"Multiple Kobo devices detected: {system_info.kobos}.")
     elif len(system_info.kobos) == 0:
-        print("No kobos detected.")
-        sys.exit()
+        sys.exit("No kobos detected.")
     else:
         [kobo] = system_info.kobos
         print(f"Kobo mountpoint is: {Path(kobo)} on {system_info.user_os}.")
@@ -92,9 +90,8 @@ def main(args):
         if args.compress:
             compressed_backup_path = backup_path + ".tar.gz"
             make_tarfile(compressed_backup_path, backup_path)
-    except Exception:
-        print("Failed to compress the backup")
-        sys.exit()
+    except (OSError, tarfile.TarError):
+        sys.exit("Failed to compress the backup. Exiting.")
     finally:
         # Print size of last backup and current backup to stdout.
         if previous_backup:
@@ -107,9 +104,8 @@ def main(args):
             )
             try:
                 shutil.rmtree(backup_path)
-            except Exception:
-                print("Failed to remove backup directory after compressing.")
-                sys.exit()
+            except (IOError, OSError):
+                sys.exit("Failed to remove backup directory after compressing. Exiting.")
         else:
             print(
                 f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
