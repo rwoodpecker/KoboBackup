@@ -9,7 +9,6 @@ import subprocess
 import sys
 
 from tarfile import TarError
-import tarfile
 from automation.automation_utils import automate_for_linux
 from utils import (
     get_directory_size,
@@ -90,7 +89,7 @@ def main(args):
         if args.compress:
             compressed_backup_path = backup_path + ".tar.gz"
             make_tarfile(compressed_backup_path, backup_path)
-    except (OSError, tarfile.TarError):
+    except (OSError, TarError):
         sys.exit("Failed to compress the backup. Exiting.")
     finally:
         # Print size of last backup and current backup to stdout.
