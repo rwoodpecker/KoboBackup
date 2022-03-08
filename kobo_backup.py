@@ -34,7 +34,9 @@ def main(args):
         if platform.system() == "Linux":
             automate_for_linux(args)
         else:
-            sys.exit("The automation feature is currently only supported on Linux. Exiting.")
+            sys.exit(
+                "The automation feature is currently only supported on Linux. Exiting."
+            )
 
     system_info = get_user_os_and_kobo_mountpoint(label)
 
@@ -77,7 +79,7 @@ def main(args):
             key=os.path.getmtime,
         )
     except ValueError:  # If there wasn't a previous backup, that's no big deal. This is only used for comparing the size of backups.
-        previous_backup = None
+        previous_backup = False
 
     # Copy files
     try:
@@ -95,26 +97,41 @@ def main(args):
     finally:
         # Print size of last backup and current backup to stdout.
         if previous_backup:
+            number_of_files = sum(
+                len(files) for _, _, files in os.walk(previous_backup)
+            )
+            raw_backup_size = get_size_format(get_directory_size(previous_backup))
             print(
-                f"The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}."
+                f"The previous backup contained {number_of_files} files and was {raw_backup_size}."
             )
         if args.compress:
+            compressed_backup_size = get_size_format(
+                get_directory_size(compressed_backup_path)
+            )
             print(
-                f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total raw size of {get_size_format(get_directory_size(backup_path))} and a compressed size of {get_size_format(get_directory_size(compressed_backup_path))} to {compressed_backup_path}."
+                f"Backup complete. Copied {number_of_files} files with a total raw size of {raw_backup_size} and a compressed size of {compressed_backup_size} to {compressed_backup_path}."
             )
             backup_notify(
                 system_info.user_os,
                 compressed_backup_path,
+                number_of_files,
+                raw_backup_size,
             )
             try:
                 shutil.rmtree(backup_path)
             except (IOError, OSError):
-                sys.exit("Failed to remove backup directory after compressing. Exiting.")
+                sys.exit(
+                    "Failed to remove backup directory after compressing. Exiting."
+                )
         else:
+            number_of_files = sum(len(files) for _, _, files in os.walk(backup_path))
+            raw_backup_size = get_size_format(get_directory_size(backup_path))
             print(
-                f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
+                f"Backup complete. Copied {number_of_files} files with a total size of {raw_backup_size} to {backup_path}."
             )
-            backup_notify(system_info.user_os, backup_path)
+            backup_notify(
+                system_info.user_os, backup_path, number_of_files, raw_backup_size
+            )
 
 
 def parse_args():
