@@ -120,7 +120,7 @@ def main(args):
 def parse_args():
     args = argparse.ArgumentParser()
     args.add_argument(
-        "-a", "--auto", help="Linux: create the auto backup script", action="store_true"
+        "-a", "--auto", help="linux: create the auto backup script", action="store_true"
     )
     args.add_argument(
         "-c", "--compress", help="compress the backup", action="store_true"
@@ -128,20 +128,20 @@ def parse_args():
     args.add_argument(
         "-d",
         "--disable",
-        help="Linux: temporarily disable auto backup (until next restart)",
+        help="linux: temporarily disable auto backup (until next restart)",
         action="store_true",
     )
     args.add_argument(
         "-e",
         "--enable",
-        help="Linux: enable auto backup for this session only (will run in this terminal)",
+        help="linux: enable auto backup for this session only (will run in this terminal)",
         action="store_true",
     )
     args.add_argument(
-        "-r", "--remove", help="Linux: remove auto backup script", action="store_true"
+        "-r", "--remove", help="linux: remove auto backup script", action="store_true"
     )
     args.add_argument(
-        "-s", "--status", help="Linux: show status of auto backup", action="store_true"
+        "-s", "--status", help="linux: show status of auto backup", action="store_true"
     )
     args = args.parse_args()
     return args
