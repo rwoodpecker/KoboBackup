@@ -1,3 +1,4 @@
+import configparser
 from dataclasses import dataclass
 import json
 import os
@@ -5,6 +6,34 @@ import platform
 import subprocess
 from typing import List
 import tarfile
+
+
+config_access = configparser.ConfigParser()
+config_location = os.path.join(
+    os.path.expanduser("~"), ".config", "kobo_backup_config.ini"
+)
+
+
+def init_config():
+    def write_file():
+        config_access.write(open(config_location, "w"))
+
+    if not os.path.exists(config_location):
+        print(f"Config file not found. Writing default to: {config_location}.")
+        config_access["kobo_backup_config"] = {
+            "backup_directory": os.path.join(
+                os.path.expanduser("~"), "Backups", "kobo"
+            ),
+            "compression": "false",  # this isn't currently used, but can be implemented in the future
+        }
+        write_file()
+
+
+def read_config(section, setting):
+    if not section:
+        section = "kobo_backup_config"
+    config_access.read(config_location)
+    return config_access.get(section, setting)
 
 
 def backup_notify(user_os, backup_path):

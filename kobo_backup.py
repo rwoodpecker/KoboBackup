@@ -16,25 +16,27 @@ from utils import (
     make_tarfile,
     get_user_os_and_kobo_mountpoint,
     backup_notify,
+    init_config,
+    read_config,
 )
 
 
 def main(args):
-
+    # Check if a config file exists, otherwise create it.
+    init_config()
+    # Read the backup directory from the configuration file.
+    backup_base_directory = read_config(None, "backup_directory")
     # Volume label of kobo - this is the default across models but could change in the future.
     label = "KOBOeReader"
-    # the folder in which backups will be placed. This is OS agnostic.
-    backup_base_directory = str(
-        os.path.join(os.path.expanduser("~"), "Backups", "kobo")
-    )
-
     # Check if user is trying to set up automation.
     # This check could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
     if args.auto or args.remove or args.disable or args.enable or args.status:
         if platform.system() == "Linux":
             automate_for_linux(args)
         else:
-            sys.exit("The automation feature is currently only supported on Linux. Exiting.")
+            sys.exit(
+                "The automation feature is currently only supported on Linux. Exiting."
+            )
 
     system_info = get_user_os_and_kobo_mountpoint(label)
 
@@ -109,7 +111,9 @@ def main(args):
             try:
                 shutil.rmtree(backup_path)
             except (IOError, OSError):
-                sys.exit("Failed to remove backup directory after compressing. Exiting.")
+                sys.exit(
+                    "Failed to remove backup directory after compressing. Exiting."
+                )
         else:
             print(
                 f"Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a total size of {get_size_format(get_directory_size(backup_path))} to {backup_path}."
