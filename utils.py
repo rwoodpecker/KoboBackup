@@ -4,7 +4,7 @@ import json
 import os
 import platform
 import subprocess
-from typing import List, Optional
+from typing import List
 import tarfile
 
 
