@@ -4,7 +4,7 @@ import json
 import os
 import platform
 import subprocess
-from typing import List
+from typing import List, Optional
 import tarfile
 
 
@@ -29,9 +29,7 @@ def init_config():
         write_file()
 
 
-def read_config(section, setting):
-    if not section:
-        section = "kobo_backup_config"
+def read_config(setting, section="kobo_backup_config"):
     config_access.read(config_location)
     return config_access.get(section, setting)
 

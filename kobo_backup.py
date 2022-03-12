@@ -25,7 +25,7 @@ def main(args):
     # Check if a config file exists, otherwise create it.
     init_config()
     # Read the backup directory from the configuration file.
-    backup_base_directory = read_config(None, "backup_directory")
+    backup_base_directory = read_config("backup_directory")
     # Volume label of kobo - this is the default across models but could change in the future.
     label = "KOBOeReader"
     # Check if user is trying to set up automation.
