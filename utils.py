@@ -33,19 +33,20 @@ def read_config(setting, section="kobo_backup_config"):
     config_access.read(config_location)
     return config_access.get(section, setting)
 
+  
+def backup_notify(user_os, backup_path, number_of_files, backup_size):
 
-def backup_notify(user_os, backup_path):
     if user_os == "Linux":
         subprocess.Popen(["notify-send", f"Backed up!"])
         # Open the file explorer to the backed up directory
         subprocess.run(["xdg-open", backup_path])
     elif user_os == "macOS":
         subprocess.call(
-            (
-                "/usr/bin/osascript",
+            [
+                "osascript",
                 "-e",
-                'display notification "Backup of Kobo complete" with title "KoboBackup"',
-            )
+                f'display notification "Copied {number_of_files} files with a size of {backup_size} to {backup_path}." with title "Kobo Backup Complete"',
+            ]
         )
 
 
