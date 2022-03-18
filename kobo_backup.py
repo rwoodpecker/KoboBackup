@@ -1,98 +1,169 @@
-import json
-import os
+import argparse
 import datetime
-from pathlib import Path
 import glob
+import os
+from pathlib import Path
+import platform
+import shutil
 import subprocess
 import sys
-import shutil
-import platform
 
-label = 'KOBOeReader' # volume label of kobo - this is the default across models but could change in the future.
-backup_base_directory = str(os.path.join(os.path.expanduser('~'), 'Backups', 'kobo')) # the folder in which backups will be placed. This should be OS agnostic.
+from tarfile import TarError
+from automation.automation_utils import automate_for_linux
+from utils import (
+    get_directory_size,
+    get_size_format,
+    make_tarfile,
+    get_user_os_and_kobo_mountpoint,
+    backup_notify,
+    init_config,
+    read_config,
+)
 
-if platform.system == 'Windows': # Get mount point on Windows
-    import wmi
-    # Set up WMI object for later
-    c = wmi.WMI()
-    kobos = []
-    # Get all drives and their infos
-    for drive in c.Win32_LogicalDisk():
-        # If any drive is called the label, append it to the list
-        if drive.VolumeName == label:
-            kobos.append(drive.Name + os.sep)
-    user_os = "Windows"
-elif platform.system() == 'Linux': # Get mount point on Linux
-    lsblk_check = subprocess.check_output(['lsblk', '-f', '--json']).decode('utf8')
-    lsblk_json = json.loads(lsblk_check)
-    kobos = [device for device in lsblk_json['blockdevices'] if device.get('label', None) == label]
-    kobos = [kobo['mountpoint'] for kobo in kobos]
-    user_os = 'Linux'
-elif platform.system() == 'Darwin':  # Get mount point on MacOS
-    df_output = subprocess.check_output(('df', '-Hl')).decode('utf8')
-    output_parts = [o.split() for o in df_output.split('\n')]
-    kobos = [o[-1] for o in output_parts if f'/Volumes/{label}' in o]
-    user_os = 'macOS'
-else:
-    raise Exception(f'Unsupported OS: {platform.system()=} {platform.release()=}')
 
-if len(kobos) > 1:
-    raise RuntimeError(f'Multiple Kobo devices detected: {kobos}.')
-elif len(kobos) == 0:
-    print('No kobos detected.')
-    sys.exit()
-else:
-    [kobo] = kobos
-    print(f'Kobo mountpoint is: {Path(kobo)} on {user_os}.')
+def main(args):
+    # Check if a config file exists, otherwise create it.
+    init_config()
+    # Read the backup directory from the configuration file.
+    backup_base_directory = read_config("backup_directory")
+    # Volume label of kobo - this is the default across models but could change in the future.
+    label = "KOBOeReader"
+    # Check if user is trying to set up automation.
+    # This check could just be `if len(sys.argv) > 1` but doing it like this makes it easier to add additional arguments for other features later.
+    if args.auto or args.remove or args.disable or args.enable or args.status:
+        if platform.system() == "Linux":
+            automate_for_linux(args)
+        else:
+            sys.exit(
+                "The automation feature is currently only supported on Linux. Exiting."
+            )
 
-backup_folder_exists = os.path.isdir(backup_base_directory) # check backup base directory exists locally, if not create it.
-if not backup_folder_exists:
-    print(f'No backup folder detected. Creating {backup_base_directory}.')
-    os.makedirs(backup_base_directory)
-else:
-    print(f'An existing kobo backup folder was detected at {backup_base_directory}.')
+    system_info = get_user_os_and_kobo_mountpoint(label)
 
-try:
-    previous_backup = max(glob.glob(os.path.join(backup_base_directory, '*/')), key=os.path.getmtime) # get the folder of the previous backup that occured
-except ValueError:
-    pass
+    # Check we have one and only one Kobo connected
+    if len(system_info.kobos) > 1:
+        raise RuntimeError(f"Multiple Kobo devices detected: {system_info.kobos}.")
+    elif len(system_info.kobos) == 0:
+        sys.exit("No kobos detected.")
+    else:
+        [kobo] = system_info.kobos
+        print(f"Kobo mountpoint is: {Path(kobo)} on {system_info.user_os}.")
 
-backup_path = os.path.join(backup_base_directory, 'kobo_backup_' + datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')) # append datestamp to directory name.
-if os.path.isdir(backup_path):
-    print(f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute.")
-    sys.exit()
+    # Check backup base directory exists locally, if not create it.
+    backup_folder_exists = os.path.isdir(backup_base_directory)
+    if not backup_folder_exists:
+        print(f"No backup folder detected. Creating {backup_base_directory}.")
+        os.makedirs(backup_base_directory)
+    else:
+        print(
+            f"An existing kobo backup folder was detected at {backup_base_directory}."
+        )
 
-try: # copy files
-    shutil.copytree(Path(kobo), backup_path)
-except OSError: # some unrequired .Trashes will return 'operation not permitted'.
-    pass
+    # Append datestamp to directory name.
+    backup_path = os.path.join(
+        backup_base_directory,
+        "kobo_backup_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M"),
+    )
+    # Check that we haven't already backed up during this minute.
+    if os.path.isdir(backup_path) or os.path.isfile(backup_path + ".tar.gz"):
+        print(
+            f"A backup of the kobo was already completed at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}. Try again in a minute."
+        )
+        sys.exit()
 
-def get_directory_size(directory): # figure out how much was backed up.
-    total = 0
+    # Get the folder of the previous backup that occured for comparison.
     try:
-        for entry in os.scandir(directory):
-            if entry.is_file():
-                total += entry.stat().st_size
-            elif entry.is_dir():
-                total += get_directory_size(entry.path)
-    except NotADirectoryError:
-        return os.path.getsize(directory)
-    except PermissionError:
-        return 0
-    return total
+        backup_directory = "*" if args.compress else "*/"
+        previous_backup = max(
+            glob.glob(os.path.join(backup_base_directory, backup_directory)),
+            key=os.path.getmtime,
+        )
+    except ValueError:  # If there wasn't a previous backup, that's no big deal. This is only used for comparing the size of backups.
+        previous_backup = False
 
-def get_size_format(b, factor=1024, suffix="B"): # convert bytes to something human readable.
-    for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
-        if b < factor:
-            return f"{b:.2f}{unit}{suffix}"
-        b /= factor
-    return f"{b:.2f}Y{suffix}"
+    # Copy files
+    try:
+        shutil.copytree(Path(kobo), backup_path)
+    except OSError:  # some unrequired .Trashes will return 'operation not permitted'.
+        pass
 
-try:
-    previous_backup
-    print(f'The previous backup contained {sum(len(files) for _, _, files in os.walk(previous_backup))} files and was {get_size_format(get_directory_size(previous_backup))}.')
-except NameError:
-    pass
+    # This is wrapped in try/except so that the code in 'finally' waits for `make_tarfile()` to finish.
+    try:
+        if args.compress:
+            compressed_backup_path = backup_path + ".tar.gz"
+            make_tarfile(compressed_backup_path, backup_path)
+    except (OSError, TarError):
+        sys.exit("Failed to compress the backup. Exiting.")
+    finally:
+        # Print size of last backup and current backup to stdout.
+        if previous_backup:
+            number_of_files = sum(
+                len(files) for _, _, files in os.walk(previous_backup)
+            )
+            raw_backup_size = get_size_format(get_directory_size(previous_backup))
+            print(
+                f"The previous backup contained {number_of_files} files and was {raw_backup_size}."
+            )
+        if args.compress:
+            compressed_backup_size = get_size_format(
+                get_directory_size(compressed_backup_path)
+            )
+            print(
+                f"Backup complete. Copied {number_of_files} files with a total raw size of {raw_backup_size} and a compressed size of {compressed_backup_size} to {compressed_backup_path}."
+            )
+            backup_notify(
+                system_info.user_os,
+                compressed_backup_path,
+                number_of_files,
+                raw_backup_size,
+            )
+            try:
+                shutil.rmtree(backup_path)
+            except (IOError, OSError):
+                sys.exit(
+                    "Failed to remove backup directory after compressing. Exiting."
+                )
+        else:
+            number_of_files = sum(len(files) for _, _, files in os.walk(backup_path))
+            raw_backup_size = get_size_format(get_directory_size(backup_path))
+            print(
+                f"Backup complete. Copied {number_of_files} files with a total size of {raw_backup_size} to {backup_path}."
+            )
+            backup_notify(
+                system_info.user_os, backup_path, number_of_files, raw_backup_size
+            )
 
-print(f'Backup complete. Copied {sum(len(files) for _, _, files in os.walk(backup_path))} files with a size of {get_size_format(get_directory_size(backup_path))} to {backup_path}.')
 
+def parse_args():
+    args = argparse.ArgumentParser()
+    args.add_argument(
+        "-a", "--auto", help="linux: create the auto backup script", action="store_true"
+    )
+    args.add_argument(
+        "-c", "--compress", help="compress the backup", action="store_true"
+    )
+    args.add_argument(
+        "-d",
+        "--disable",
+        help="linux: temporarily disable auto backup (until next restart)",
+        action="store_true",
+    )
+    args.add_argument(
+        "-e",
+        "--enable",
+        help="linux: enable auto backup for this session only (will run in this terminal)",
+        action="store_true",
+    )
+    args.add_argument(
+        "-r", "--remove", help="linux: remove auto backup script", action="store_true"
+    )
+    args.add_argument(
+        "-s", "--status", help="linux: show status of auto backup", action="store_true"
+    )
+    args = args.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    main(args)
