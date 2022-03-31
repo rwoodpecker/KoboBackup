@@ -26,7 +26,7 @@ def automate_for_linux(args):
         autostart_path = os.path.expanduser("~/.config/autostart/")
         desktop_file_name = "auto_kobo_backup.desktop"
         if os.path.exists(autostart_path + desktop_file_name):
-            print("Auto backup is enabled on restart.")
+            print("Auto backup will be enabled on restart.")
         else:
             print("Auto backup script will not run on restart.")
         sys.exit()
@@ -117,7 +117,7 @@ X-GNOME-Autostart-Delay=0
     subprocess.run(["chmod", "+x", repo_location + os.sep + script_name])
 
     print(
-        f"Created file in autostart called {desktop_file_name}... Launching directory. After restarting your PC, your Kobo will be automatically backed up whenever you connect it."
+        f"Created file in autostart called {desktop_file_name}... Launching directory. After restarting your PC, your Kobo will be automatically backed up whenever you connect it. If you would like to do so before restarting, leave this terminal session running."
     )
     subprocess.run(["xdg-open", autostart_path])
 
