@@ -2,6 +2,12 @@
 
 A python script to backup the contents of your kobo device. Backups will be placed in ~/Backups/kobo by default but this can be customised. Backups are timestamped and independent of each other. Supports Linux, macOS and Windows.
 
+Use `python3 kobo_backup.py -h` for list of options.
+
+## Generic options (Linux, macOS)
+`-c --compress`:
+- Compress the backup
+
 ## Auto Back-up
 The Auto Back-up feature is currently supported on Linux
 
@@ -14,28 +20,36 @@ This `.desktop` script contains instructions that simply execute a 'watcher' scr
 #### Setup
 To set up auto-backup:
 - Navigate to the KoboBackup folder
-- Run `python3 kobo_backup.py --s` (`s` for set up)
+- Run `python3 kobo_backup.py -a` (`a` for autobackup).
+    - This also runs the 'watcher' script in the current terminal.
 - Restart your computer
 - Connect your Kobo and it will automatically create a backup.
+    - If you would like to run before restarting, use `-e` or keep the terminal session running
 
-#### Cancel
-To cancel auto back-up:
+#### Remove
+To remove auto back-up:
 - Navigate to the KoboBackup folder
-- Run `python3 kobo_backup.py --c` (`c` for cancel).
+- Run `python3 kobo_backup.py -c` (`-c` for `--cancel`).
 
-The `--c` option removes the script that autostarts the watcher script, and it also terminates the watcher script. That means you don't need to restart your PC for it to stop.
+The `-c` option removes the script that autostarts the watcher script, and it also terminates the watcher script. That means you don't need to restart your PC for it to stop.
 
 #### Disable
 To temporarily disable auto back-up (until next restart):
 - Navigate to the KoboBackup folder
-- Run `python3 kobo_backup.py --d` (`d` for disable).
+- Run `python3 kobo_backup.py -d` (`-d` for `--disable`).
 
-The `--d` option simply stops the background script that watches and waits for a Kobo to be connected. It assumes you have already set up auto-backup with `--s` and restarted your PC. If you haven't, nothing will happen. 
+The `-d` option simply stops the background script that watches and waits for a Kobo to be connected. It assumes you have already set up auto-backup with `--s` and restarted your PC. If you haven't, nothing will happen. 
 If you've setup auto-backup, the 'watcher' script will auto-run again next time you re-start your PC.
 
 #### Enable
 To temporarily enable (in a running terminal session):
 - Navigate to the KoboBackup folder
-- Run `python3 kobo_backup.py --e` (`e` for enable).
+- Run `python3 kobo_backup.py -e` (`-e` for `--enable`).
 
-The `--e` option enables the watcher in your current terminal session. If you connect a Kobo, it will auto back-up. To stop this, just hit `ctrl+c` to stop the script. 
+The `-e` option enables the watcher in your current terminal session. If you connect a Kobo, it will auto back-up. To stop this, just hit `ctrl+c` to stop the script.
+
+#### Status
+Shows the current status of your backup:
+- Navigate to the KoboBackup folder
+- Run `python3 kobo_backup.py -s` (`-s` for `--status`)
+
