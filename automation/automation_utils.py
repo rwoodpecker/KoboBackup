@@ -26,7 +26,7 @@ def automate_for_linux(args):
         autostart_path = os.path.expanduser("~/.config/autostart/")
         desktop_file_name = "auto_kobo_backup.desktop"
         if os.path.exists(autostart_path + desktop_file_name):
-            print("Auto backup will be enabled on restart.")
+            print("Auto backup will be active on restart.")
         else:
             print("Auto backup script will not run on restart.")
         sys.exit()
