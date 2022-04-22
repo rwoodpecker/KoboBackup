@@ -1,8 +1,10 @@
-# Kobo Backup
+# Kobo Backup 
 
 A python script to backup the contents of your kobo device. Backups will be placed in ~/Backups/kobo by default but this can be customised. Backups are timestamped and independent of each other. Supports Linux, macOS and Windows.
 
 Use `python3 kobo_backup.py -h` for list of options.
+
+Enjoy.
 
 ## Generic options (Linux, macOS)
 `-c --compress`:
