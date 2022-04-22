@@ -3,8 +3,8 @@ from gi.repository import GLib, Gio
 import subprocess
 import sys
 
-class WatchForKobo(object):
 
+class WatchForKobo(object):
     def __init__(self):
         someloop = GLib.MainLoop()
         self.setup_watching()
@@ -18,9 +18,16 @@ class WatchForKobo(object):
     def actonchange(self, event, volume):
         if volume.get_name() == "KOBOeReader":
             # Send notification to user
-            subprocess.Popen(['notify-send', f"{volume.get_name()} connected", "Attempting backup..."]) 
-            # Run backup script
-            subprocess.call(['python3', 'kobo_backup.py'])
+            subprocess.Popen(
+                [
+                    "notify-send",
+                    f"{volume.get_name()} connected",
+                    "Attempting backup...",
+                ]
+            )
+            # Run backup script (Will compress by default)
+            subprocess.call(["python3", "kobo_backup.py", "-c"])
+
 
 if __name__ == "__main__":
     WatchForKobo()
